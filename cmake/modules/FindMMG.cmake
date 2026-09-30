@@ -158,20 +158,20 @@ list(REMOVE_DUPLICATES _lib_env)
 if(MMG_LIBDIR)
   set(MMG_mmg_LIBRARY "MMG_mmg_LIBRARY-NOTFOUND")
   find_library(MMG_mmg_LIBRARY
-    NAMES mmg
+    NAMES mmg mmg3d
     HINTS ${MMG_LIBDIR})
 else()
   if(MMG_DIR)
     set(MMG_mmg_LIBRARY "MMG_mmg_LIBRARY-NOTFOUND")
 
     find_library(MMG_mmg_LIBRARY
-      NAMES mmg
+      NAMES mmg mmg3d
       HINTS ${MMG_DIR}
       PATH_SUFFIXES "lib" "lib32" "lib64")
   else()
     set(MMG_mmg_LIBRARY "MMG_mmg_LIBRARY-NOTFOUND")
     find_library(MMG_mmg_LIBRARY
-      NAMES mmg
+      NAMES mmg mmg3d
       HINTS ${_lib_env})
   endif()
 endif()
@@ -203,15 +203,18 @@ if(MMG_LIBRARIES)
   if (MMG_INCLUDE_DIRS)
     set(REQUIRED_INCDIRS "${MMG_INCLUDE_DIRS}")
   endif()
-  if (MMG_LIBRARY_DIRS)
+  if (MMG_LIBRARY_DIRS AND NOT WIN32)
     set(REQUIRED_LIBDIRS "${MMG_LIBRARY_DIRS}")
   endif()
   set(REQUIRED_LIBS "${MMG_LIBRARIES}")
-  # m
-  find_library(M_LIBRARY NAMES m)
-  mark_as_advanced(M_LIBRARY)
-  if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lm")
+  # POSIX builds need libm; MSVC rejects the -lm spelling and searches the
+  # full library path directly instead.
+  if (NOT WIN32)
+    find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
+    if(M_LIBRARY)
+      list(APPEND REQUIRED_LIBS "-lm")
+    endif()
   endif()
 
   # set required libraries for link

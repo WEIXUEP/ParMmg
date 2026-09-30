@@ -183,6 +183,19 @@ if (METIS_metis_LIBRARY)
   # set cmake variables
   set(METIS_LIBRARIES    "${METIS_metis_LIBRARY}")
   set(METIS_LIBRARY_DIRS "${metis_lib_path}")
+
+  # Recent METIS sources keep a small set of runtime helpers in GKlib rather
+  # than folding them into metis.lib.  Native Windows builds have no
+  # pkg-config metadata, so accept an explicit GKlib archive.
+  set(METIS_GKLIB_LIBRARY "" CACHE FILEPATH
+    "GKlib library required by the METIS build")
+  if (NOT METIS_GKLIB_LIBRARY)
+    find_library(METIS_GKLIB_LIBRARY NAMES GKlib gklib
+      HINTS "${metis_lib_path}" "$ENV{GKLIB_DIR}/lib")
+  endif()
+  if (METIS_GKLIB_LIBRARY)
+    list(APPEND METIS_LIBRARIES "${METIS_GKLIB_LIBRARY}")
+  endif()
 else ()
   set(METIS_LIBRARIES    "METIS_LIBRARIES-NOTFOUND")
   set(METIS_LIBRARY_DIRS "METIS_LIBRARY_DIRS-NOTFOUND")
@@ -202,15 +215,18 @@ if(METIS_LIBRARIES)
   if (METIS_INCLUDE_DIRS)
     set(REQUIRED_INCDIRS  "${METIS_INCLUDE_DIRS}")
   endif()
-  if (METIS_LIBRARY_DIRS)
+  if (METIS_LIBRARY_DIRS AND NOT WIN32)
     set(REQUIRED_LIBDIRS "${METIS_LIBRARY_DIRS}")
   endif()
   set(REQUIRED_LIBS "${METIS_LIBRARIES}")
-  # m
-  find_library(M_LIBRARY NAMES m)
-  mark_as_advanced(M_LIBRARY)
-  if(M_LIBRARY)
-    list(APPEND REQUIRED_LIBS "-lm")
+  # POSIX builds need libm; MSVC rejects the -lm spelling and searches the
+  # full library path directly instead.
+  if (NOT WIN32)
+    find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
+    if(M_LIBRARY)
+      list(APPEND REQUIRED_LIBS "-lm")
+    endif()
   endif()
 
   # set required libraries for link

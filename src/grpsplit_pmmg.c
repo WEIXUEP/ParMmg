@@ -1630,7 +1630,15 @@ int PMMG_splitPart_grps( PMMG_pParMesh parmesh,int target,int fitMesh,int redist
   idx_t ngrp = 1;
   idx_t *part = NULL;
   int grpIdOld;
+  /* MSVC C has no variable-length arrays.  Keep the native Windows path
+   * bounded by the same practical partition limit used by ParMmg. */
+#if defined(_MSC_VER)
+  enum { PMMG_WINDOWS_MAX_PROCS = 1000 };
+  if ( parmesh->nprocs > PMMG_WINDOWS_MAX_PROCS ) return 0;
+  int noldgrps_all[PMMG_WINDOWS_MAX_PROCS];
+#else
   int noldgrps_all[parmesh->nprocs];
+#endif
   int npmax,nemax,xpmax,xtmax;
 
   /* We are splitting group 0 */
@@ -1659,7 +1667,9 @@ int PMMG_splitPart_grps( PMMG_pParMesh parmesh,int target,int fitMesh,int redist
         (target == PMMG_GRPSPL_DISTR_TARGET) ) {
       /* Set to a value higher than 1 just to continue until the true
        * computation (which is after a jump on ngrp==1) */
+#if !defined(_MSC_VER)
 #warning: fix this conditional jump
+#endif
       ngrp = 2;
     } else {
 
@@ -1700,7 +1710,12 @@ int PMMG_splitPart_grps( PMMG_pParMesh parmesh,int target,int fitMesh,int redist
                            parmesh->comm), return 0 );
 
   /* Print split info */
-  int spltinfo[2],spltinfo_all[2*parmesh->nprocs];
+  int spltinfo[2];
+#if defined(_MSC_VER)
+  int spltinfo_all[2*PMMG_WINDOWS_MAX_PROCS];
+#else
+  int spltinfo_all[2*parmesh->nprocs];
+#endif
   if ( parmesh->info.imprim0 > PMMG_VERB_DETQUAL ) {
     spltinfo[0] = ngrp;
     spltinfo[1] = meshOld->ne;

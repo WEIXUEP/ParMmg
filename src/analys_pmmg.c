@@ -394,7 +394,9 @@ int PMMG_hashNorver_switch( PMMG_pParMesh parmesh,PMMG_hn_loopvar *var ) {
   if( !(var->ppt->tag & MG_GEO ) ) return 1;
 
   /* If non-manifold, only process exterior points */
+#if !defined(_MSC_VER)
 #warning this should also work on the border of a OPNBDY surface
+#endif
   if( (var->ppt->tag & MG_NOM) && var->iadj ) return 1;
 
   /* Get internal communicator index */
@@ -950,7 +952,9 @@ int PMMG_hashNorver_normals( PMMG_pParMesh parmesh, PMMG_hn_loopvar *var,MPI_Com
   MMG5_pxPoint pxp;
   double *doublevalues,dd,l[2],*c[2];
   int    *intvalues,idx,d,j;
+#if !defined(_MSC_VER)
 #warning Luca: fix opnbdy treatment
+#endif
 
   intvalues    = parmesh->int_node_comm->intvalues;
   doublevalues = parmesh->int_node_comm->doublevalues;
@@ -1012,7 +1016,9 @@ int PMMG_hashNorver_normals( PMMG_pParMesh parmesh, PMMG_hn_loopvar *var,MPI_Com
       pxp = &var->mesh->xpoint[var->ppt->xp];
 
       /* Compute tangent (as in MMG3D_boulenm) */
+#if !defined(_MSC_VER)
 #warning Luca: why not like in MMG5_boulec?
+#endif
       if( MG_EDG(var->ppt->tag) ) {
 
         c[0] = &doublevalues[6*idx];
@@ -1122,7 +1128,9 @@ int PMMG_hashNorver_normals( PMMG_pParMesh parmesh, PMMG_hn_loopvar *var,MPI_Com
       if( intvalues[idx] ) {
         pxp = &var->mesh->xpoint[var->ppt->xp];
 
+#if !defined(_MSC_VER)
 #warning skip opnbdy until ready, as wrong orientation can mess up normals
+#endif
         if( var->ppt->tag & MG_OPNBDY ) continue;
 
         /* Loop on manifold or non-manifold exterior points */
@@ -1637,7 +1645,9 @@ int PMMG_update_analys(PMMG_pParMesh parmesh) {
 
     /* First: seek edges at the interface of two distinct domains and mark it as
      * required */
+#if !defined(_MSC_VER)
 #warning Luca: add a function like MMG5_setEdgeNmTag(mesh,hash)
+#endif
 
   }
 
@@ -2419,7 +2429,9 @@ int PMMG_setfeatures(PMMG_pParMesh parmesh,MMG5_pMesh mesh,MMG5_HGeom *pHash,MPI
 #endif
 
       if( intvalues[2*idx] == 1 ) { /* no adjacent */
+#if !defined(_MSC_VER)
 #warning remove MG_GEO for consistency with Mmg  ?
+#endif
         /* MG_REF info is not analyzed in parallel for non-manifold edges (only
            serially by Mmy).  As we need to ensure the tag consistency across
            the processes and for sake of simplicity, we simply mark all the
@@ -2444,7 +2456,9 @@ int PMMG_setfeatures(PMMG_pParMesh parmesh,MMG5_pMesh mesh,MMG5_HGeom *pHash,MPI
           nr++;
         }
         if( intvalues[2*idx] > 2 ) { /* non-manifold edge */
+#if !defined(_MSC_VER)
 #warning remove MG_GEO for consistency with Mmg ?
+#endif
           /* MG_REF info is not analyzed in parallel for non-manifold edges (only
            serially by Mmy).  As we need to ensure the tag consistency across
            the processes and for sake of simplicity, we simply mark all the
@@ -3051,7 +3065,9 @@ int PMMG_analys(PMMG_pParMesh parmesh,MMG5_pMesh mesh,MPI_Comm comm) {
   PMMG_analys_comms_free( parmesh );
 
   /* check subdomains connected by a vertex and mark these vertex as corner and required */
+#if !defined(_MSC_VER)
 #warning Luca: check that parbdy are skipped
+#endif
   MMG5_chkVertexConnectedDomains(mesh);
 
   /* build hash table for geometric edges: gather tag infos from edges and

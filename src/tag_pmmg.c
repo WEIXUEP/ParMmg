@@ -208,7 +208,7 @@ void PMMG_untag_par_face(MMG5_pxTetra pxt,int j){
  * parallel faces during load balancing.
  *
  */
-inline int PMMG_resetOldTag(PMMG_pParMesh parmesh) {
+int PMMG_resetOldTag(PMMG_pParMesh parmesh) {
   MMG5_pMesh   mesh;
   MMG5_pTetra  pt;
   MMG5_pxTetra pxt;
@@ -853,7 +853,9 @@ int PMMG_parbdyTria( PMMG_pParMesh parmesh ) {
         mesh->point[ptt->v[j]].tag |= MG_PARBDYBDY;
       /* check orientation: set orientation of triangle outward w.r.t. the
        * highest tetra reference, remove MG_PARBDYBDY from the halo triangle */
+#if !defined(_MSC_VER)
 #warning Luca: no opnbdy yet
+#endif
       if( pt->ref > intvalues[idx] ) {
         ptt->v[0] = ia;
         ptt->v[1] = ib;

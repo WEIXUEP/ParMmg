@@ -324,7 +324,9 @@ int PMMG_preprocessMesh_distributed( PMMG_pParMesh parmesh )
     }
   }
 
+#if !defined(_MSC_VER)
 #warning hmin/hmax computed on each proc while we want a global value from the global bounding box and/or the global metric field...
+#endif
   /* Don't reset the hmin value computed when unscaling the mesh */
   if ( !parmesh->info.sethmin ) {
     mesh->info.sethmin = 1;
@@ -341,7 +343,9 @@ int PMMG_preprocessMesh_distributed( PMMG_pParMesh parmesh )
   }
 
   if ( parmesh->info.imprim > PMMG_VERB_ITWAVES && (!mesh->info.iso) && met->m ) {
+#if !defined(_MSC_VER)
 #warning Luca: check this function
+#endif
     MMG3D_prilen(mesh,met,0);
   }
 

@@ -688,7 +688,9 @@ int PMMG_check_reachability( PMMG_pParMesh parmesh,int *counter ) {
       itosend[i]     = intvalues[idx] ;
     }
 
+#if !defined(_MSC_VER)
 #warning Luca: change this tag
+#endif
     MPI_CHECK(
       MPI_Sendrecv(itosend,nitem,MPI_INT,color,MPI_PARMESHGRPS2PARMETIS_TAG+1,
                    itorecv,nitem,MPI_INT,color,MPI_PARMESHGRPS2PARMETIS_TAG+1,
@@ -1154,7 +1156,13 @@ int PMMG_part_getInterfaces( PMMG_pParMesh parmesh,int *part,int *ngrps,int targ
   MMG5_pTetra pt;
   int         *map_grps;
   int         igrp,iproc,color;
+#if defined(_MSC_VER)
+  enum { PMMG_WINDOWS_MAX_PROCS = 1000 };
+  if ( parmesh->nprocs > PMMG_WINDOWS_MAX_PROCS ) return 0;
+  int         sumngrps[PMMG_WINDOWS_MAX_PROCS+1];
+#else
   int         sumngrps[parmesh->nprocs+1];
+#endif
   int         ie,i,count;
 
   /* It has to be called on a merged partition */
@@ -1394,7 +1402,9 @@ int PMMG_part_moveInterfaces( PMMG_pParMesh parmesh,int *displsgrp,int *mapgrp,i
         itosend[i]     = intvalues[idx] ;
       }
 
+#if !defined(_MSC_VER)
 #warning Luca: change this tag
+#endif
       MPI_CHECK(
         MPI_Sendrecv(itosend,nitem,MPI_INT,color,MPI_PARMESHGRPS2PARMETIS_TAG+3,
                      itorecv,nitem,MPI_INT,color,MPI_PARMESHGRPS2PARMETIS_TAG+3,

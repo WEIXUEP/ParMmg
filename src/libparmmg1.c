@@ -693,7 +693,9 @@ int PMMG_parmmglib1( PMMG_pParMesh parmesh )
       }
 #endif
 
+#if !defined(_MSC_VER)
 #warning Luca: until analysis is not ready
+#endif
 #ifdef USE_POINTMAP
       for( k = 1; k <= mesh->np; k++ ) {
         mesh->point[k].src = k;

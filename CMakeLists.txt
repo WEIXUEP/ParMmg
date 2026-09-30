@@ -44,6 +44,19 @@ FILE(MAKE_DIRECTORY ${PMMG_BINARY_DIR})
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/src/pmmgversion.h.in
   ${PMMG_BINARY_DIR}/pmmgversion.h @ONLY)
 
+# The POSIX git metadata helper is intentionally not executed by the native
+# Windows generator.  libparmmg.c still includes the generated header, so
+# provide the same stable fallback values during configuration.
+IF (WIN32 AND NOT MINGW)
+  FILE (WRITE ${PMMG_BINARY_DIR}/git_log_pmmg.h
+    "#ifndef _GIT_LOG_PMMG_H\n"
+    "#define _GIT_LOG_PMMG_H\n"
+    "#define PMMG_GIT_BRANCH \"No git branch found\"\n"
+    "#define PMMG_GIT_COMMIT \"No git commit found\"\n"
+    "#define PMMG_GIT_DATE \"No git commit found\"\n"
+    "#endif\n")
+ENDIF()
+
 # To see flags and options of compilation
 #SET(CMAKE_VERBOSE_MAKEFILE TRUE)
 
@@ -145,7 +158,7 @@ ENDIF()
 ############################################################################
 # compile parallel version
 ENABLE_LANGUAGE ( Fortran )
-FIND_PACKAGE( MPI COMPONENTS C CXX OPTIONAL_COMPONENTS Fortran )
+FIND_PACKAGE( MPI REQUIRED COMPONENTS C CXX OPTIONAL_COMPONENTS Fortran )
 
 SET( CMAKE_C_COMPILE_FLAGS "${CMAKE_C_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}" )
 SET( CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} ${MPI_LINK_FLAGS}" )
@@ -153,12 +166,18 @@ SET( CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} ${MPI_LINK_FLAGS}" )
 SET( CMAKE_CXX_COMPILE_FLAGS "${CMAKE_CXX_COMPILE_FLAGS} ${MPI_COMPILE_FLAGS}" )
 SET( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${MPI_LINK_FLAGS}" )
 
-INCLUDE_DIRECTORIES( ${MPI_INCLUDE_PATH} )
+INCLUDE_DIRECTORIES( ${MPI_C_INCLUDE_DIRS} ${MPI_CXX_INCLUDE_DIRS} )
 
-# openmpi is bugged (deadlocks) : warn the user
-EXECUTE_PROCESS ( COMMAND grep "OMPI_MAJOR_VERSION"  "${MPI_C_INCLUDE_PATH}/mpi.h"
-  RESULT_VARIABLE CMD_ERROR
-  OUTPUT_VARIABLE CMD_OUTPUT )
+# openmpi is bugged (deadlocks) : warn the user.  The old check used a
+# POSIX grep command, which is not available in a native oneAPI/Windows
+# configure and is not relevant for Intel MPI.
+IF ( NOT WIN32 )
+  EXECUTE_PROCESS ( COMMAND grep "OMPI_MAJOR_VERSION"  "${MPI_C_INCLUDE_PATH}/mpi.h"
+    RESULT_VARIABLE CMD_ERROR
+    OUTPUT_VARIABLE CMD_OUTPUT )
+ELSE()
+  SET ( CMD_ERROR 1 )
+ENDIF()
 
 IF ( ${CMD_ERROR} MATCHES 0 )
   SET ( OMPI_LIST ${CMD_OUTPUT} )
@@ -175,20 +194,24 @@ ENDIF()
 SET( CMAKE_C_FLAGS "-DUSE_MPI ${CMAKE_C_FLAGS}" )
 SET( CMAKE_CXX_FLAGS "-DUSE_MPI ${CMAKE_CXX_FLAGS}" )
 MESSAGE( STATUS "Compilation with mpi" )
-SET( LIBRARIES ${MPI_C_LIBRARIES} ${LIBRARIES} )
-SET( LIBRARIES ${MPI_CXX_LIBRARIES} ${LIBRARIES} )
+SET( LIBRARIES MPI::MPI_C MPI::MPI_CXX ${LIBRARIES} )
 
-EXECUTE_PROCESS ( COMMAND  ${MPIEXEC} --oversubscribe sleep 1
-  RESULT_VARIABLE CMD_ERROR
-  OUTPUT_VARIABLE CMD_OUTPUT )
+# OpenMPI accepts --oversubscribe; Intel MPI's Hydra launcher does not.
+IF ( NOT WIN32 )
+  EXECUTE_PROCESS ( COMMAND  ${MPIEXEC} --oversubscribe sleep 1
+    RESULT_VARIABLE CMD_ERROR
+    OUTPUT_VARIABLE CMD_OUTPUT )
 
-IF ( "${CMD_ERROR}" MATCHES "0" )
-  SET ( MPI_ARGS "-oversubscribe" )
+  IF ( "${CMD_ERROR}" MATCHES "0" )
+    SET ( MPI_ARGS "-oversubscribe" )
+  ENDIF()
+ELSE()
+  SET ( MPI_ARGS "" )
 ENDIF()
 
 # Check the minimum MPI version
-SET ( CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH}" )
-SET ( CMAKE_REQUIRED_LIBRARIES "${MPI_C_LIBRARIES}" )
+SET ( CMAKE_REQUIRED_INCLUDES "${MPI_C_INCLUDE_DIRS}" )
+SET ( CMAKE_REQUIRED_LIBRARIES MPI::MPI_C )
 CHECK_C_SOURCE_COMPILES( "
 #include <stdio.h>
 #include <stdint.h>
@@ -449,6 +472,9 @@ GENERATE_FORTRAN_HEADER ( pmmg
 ###############################################################################
 # Header files
 INCLUDE_DIRECTORIES(${PMMG_SOURCE_DIR})
+# pmmgversion.h and generated Fortran declarations live in the binary tree
+# on native Windows as well as on POSIX builds.
+INCLUDE_DIRECTORIES(${PMMG_BINARY_DIR})
 
 # Source files
 FILE(
