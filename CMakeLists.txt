@@ -401,10 +401,11 @@ ELSE ( )
   ELSE ( )
     MESSAGE(STATUS ${METIS_INCLUDE_DIR} ${METIS_LIBRARIES} )
 
-    MESSAGE ( ERROR " Metis library not found: "
+    MESSAGE ( FATAL_ERROR " Metis library not found or not linkable: "
       "If you have already installed Metis and want to use it, "
       "please set the CMake variable or environment variable METIS_DIR "
-      "to your metis directory.")
+      "to your metis directory. For a separate GKlib archive, set "
+      "GKLIB_DIR or METIS_GKLIB_LIBRARY.")
   ENDIF ( )
 
   IF ( NOT ${METIS_INTSIZE} EQUAL 4 )

@@ -184,14 +184,16 @@ if (METIS_metis_LIBRARY)
   set(METIS_LIBRARIES    "${METIS_metis_LIBRARY}")
   set(METIS_LIBRARY_DIRS "${metis_lib_path}")
 
-  # Recent METIS sources keep a small set of runtime helpers in GKlib rather
-  # than folding them into metis.lib.  Native Windows builds have no
-  # pkg-config metadata, so accept an explicit GKlib archive.
+  # Recent METIS sources require a separate GKlib archive on all platforms.
   set(METIS_GKLIB_LIBRARY "" CACHE FILEPATH
     "GKlib library required by the METIS build")
   if (NOT METIS_GKLIB_LIBRARY)
+    # An empty cached value suppresses find_library, unlike a NOTFOUND value.
+    unset(METIS_GKLIB_LIBRARY CACHE)
+    unset(METIS_GKLIB_LIBRARY)
     find_library(METIS_GKLIB_LIBRARY NAMES GKlib gklib
-      HINTS "${metis_lib_path}" "$ENV{GKLIB_DIR}/lib")
+      HINTS "${metis_lib_path}" "${GKLIB_DIR}/lib" "${GKLIB_DIR}/lib64"
+            "$ENV{GKLIB_DIR}/lib" "$ENV{GKLIB_DIR}/lib64")
   endif()
   if (METIS_GKLIB_LIBRARY)
     list(APPEND METIS_LIBRARIES "${METIS_GKLIB_LIBRARY}")
@@ -250,6 +252,7 @@ if(METIS_LIBRARIES)
       message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
       message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
       message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+      message(STATUS "For split METIS/GKlib installations, set GKLIB_DIR or METIS_GKLIB_LIBRARY")
     endif()
   endif()
   set(CMAKE_REQUIRED_INCLUDES)
